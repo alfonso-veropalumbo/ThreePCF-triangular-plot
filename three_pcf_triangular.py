@@ -110,9 +110,21 @@ def build_triangle_configurations(r_bins: np.ndarray) -> TriangleConfigurations:
 # --------------------------------------------------------------------------- #
 # Synthetic 3PCF model
 # --------------------------------------------------------------------------- #
-def power_law_xi(r: np.ndarray, r0: float = 5.0, gamma: float = 1.8) -> np.ndarray:
-    """Power-law two-point correlation function xi(r) = (r/r0)^(-gamma)."""
-    return (np.asarray(r, dtype=float) / r0) ** (-gamma)
+def power_law_xi(
+    r: np.ndarray, r0: float = 5.0, gamma: float = 1.8,
+    r_zero: float | None = None,
+) -> np.ndarray:
+    """Power-law two-point correlation function xi(r) = (r/r0)^(-gamma).
+
+    If ``r_zero`` is given, a constant is subtracted so that xi crosses zero at
+    r = r_zero and goes *negative* beyond it -- a crude stand-in for the
+    large-scale zero-crossing of the real correlation function, which is what
+    lets the 3PCF change sign.
+    """
+    xi = (np.asarray(r, dtype=float) / r0) ** (-gamma)
+    if r_zero is not None:
+        xi = xi - (r_zero / r0) ** (-gamma)
+    return xi
 
 
 def synthetic_zeta(
@@ -200,3 +212,58 @@ def bin_on_shape_plane(
     mean = np.ma.masked_array(mean, mask=~np.isfinite(mean) | (count < min_count))
 
     return xedges, yedges, mean
+
+
+# --------------------------------------------------------------------------- #
+# Scale-averaged 3PCF normalised by the smallest side (formula 44)
+# --------------------------------------------------------------------------- #
+# numpy >= 2.0 renamed trapz -> trapezoid.
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
+
+
+def synthetic_qhat(
+    r1: np.ndarray, r2: np.ndarray, r3: np.ndarray,
+    r0: float = 5.0, gamma: float = 1.8, r_zero: float | None = 130.0,
+) -> np.ndarray:
+    """Synthetic 3PCF integrand Qhat(r1, r2, r3), hierarchical ansatz
+
+        Qhat = xi(r1) xi(r2) + xi(r2) xi(r3) + xi(r3) xi(r1).
+
+    With the default ``r_zero`` the two-point function xi changes sign at large
+    separation, so Qhat (and hence its scale average) can be negative.  This is
+    an illustrative placeholder -- replace it with a measured/modelled reduced
+    3PCF to use real data.
+    """
+    xi1 = power_law_xi(r1, r0, gamma, r_zero)
+    xi2 = power_law_xi(r2, r0, gamma, r_zero)
+    xi3 = power_law_xi(r3, r0, gamma, r_zero)
+    return xi1 * xi2 + xi2 * xi3 + xi3 * xi1
+
+
+def q_bar(
+    x2: np.ndarray,
+    x3: np.ndarray,
+    r_l: float = 40.0,
+    r_u: float = 90.0,
+    n_r: int = 256,
+    integrand=synthetic_qhat,
+) -> np.ndarray:
+    """Scale-averaged 3PCF as a function of shape, normalised by the smallest side.
+
+    Configuration-space analogue of Eq. (44): with x2 = r2/r1 and x3 = r3/r1
+    (the smallest side r1 is the reference, the "upside-down" counterpart of the
+    largest k1 in Fourier space),
+
+        Qbar(x2, x3) = 1/(r_u - r_l) * \\int_{r_l}^{r_u} dr Qhat(r, r x2, r x3).
+
+    The integral runs over the reference (smallest) side r1 = r and is evaluated
+    by the trapezoidal rule on ``n_r`` points.  ``x2`` and ``x3`` may be arrays
+    of any matching shape; the result has that same shape.
+    """
+    x2 = np.asarray(x2, dtype=float)
+    x3 = np.asarray(x3, dtype=float)
+
+    rr = np.linspace(r_l, r_u, n_r)
+    r1 = rr.reshape((1,) * x2.ndim + (-1,))          # (..., n_r)
+    val = integrand(r1, r1 * x2[..., None], r1 * x3[..., None])
+    return _trapz(val, rr, axis=-1) / (r_u - r_l)

@@ -44,6 +44,9 @@ measurements.
   `zeta_triangular.png`.
 - `plot_3pcf_cos_angle.py` — single triangle-shape panel coloured by the cosine
   of the angle between `r1` and `r2`; writes `cos_angle_triangular.png`.
+- `plot_3pcf_qbar.py` — single panel of the **scale-averaged** 3PCF
+  `Qbar(x2, x3)`, normalised by the *smallest* side `r1`; writes
+  `qbar_triangular.png`.
 
 ## Usage
 
@@ -51,6 +54,7 @@ measurements.
 pip install -r requirements.txt
 python plot_3pcf_triangular.py   # 2x4 grid of zeta(r1,r2,r3) shape maps
 python plot_3pcf_cos_angle.py    # single panel coloured by cos(theta_12)
+python plot_3pcf_qbar.py         # single panel of the scale-averaged Qbar(x2,x3)
 ```
 
 `plot_3pcf_triangular.py` writes `zeta_triangular.png`: a 2×4 grid of
@@ -68,6 +72,26 @@ the cosine of the angle between sides `r1` and `r2` (opposite the longest side
 `r3`). It runs from `-1` on the folded edge through `~0` at squeezed up to
 `0.5` at the equilateral corner — a purely geometric quantity, independent of
 the 3PCF model.
+
+`plot_3pcf_qbar.py` writes `qbar_triangular.png`: the **scale-averaged** 3PCF as
+a function of shape, normalised by the *smallest* side `r1`. In configuration
+space the side hierarchy is upside-down relative to Fourier space (the smallest
+side `r1` plays the role of the largest wavenumber `k1`), so here the shape axes
+are `x2 = r2/r1` and `x3 = r3/r1`, both `>= 1`, with valid triangles in the band
+`x2 <= x3 <= x2 + 1`. The plotted quantity is the configuration-space analogue
+of Eq. (44),
+
+```
+Qbar(x2, x3) = 1/(r_u - r_l) * integral_{r_l}^{r_u} dr  Qhat(r, r*x2, r*x3),
+```
+
+i.e. `Qhat` averaged over the reference (smallest) side `r1 = r`. The synthetic
+`Qhat` uses a two-point function with a large-scale zero-crossing, so the 3PCF
+**changes sign**: the colour scale is diverging and centred (white) at zero,
+positive (red) near equilateral and negative (blue) toward elongated shapes.
+The averaging window `[r_l, r_u]` is chosen to straddle the zero-crossing regime
+so the sign is visible; `synthetic_qhat` and `q_bar` in `three_pcf_triangular.py`
+expose all the parameters.
 
 ### Plugging in real data
 
