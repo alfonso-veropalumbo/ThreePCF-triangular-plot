@@ -241,29 +241,29 @@ def synthetic_qhat(
 
 
 def q_bar(
-    x2: np.ndarray,
-    x3: np.ndarray,
+    x: np.ndarray,
+    y: np.ndarray,
     r_l: float = 40.0,
     r_u: float = 90.0,
     n_r: int = 256,
     integrand=synthetic_qhat,
 ) -> np.ndarray:
-    """Scale-averaged 3PCF as a function of shape, normalised by the smallest side.
+    """Scale-averaged 3PCF as a function of shape, normalised by the largest side.
 
-    Configuration-space analogue of Eq. (44): with x2 = r2/r1 and x3 = r3/r1
-    (the smallest side r1 is the reference, the "upside-down" counterpart of the
-    largest k1 in Fourier space),
+    Configuration-space analogue of Eq. (44).  With x = r1/r3 and y = r2/r3
+    (both <= 1; the largest side r3 is the reference, mirroring the largest k1
+    in Fourier space),
 
-        Qbar(x2, x3) = 1/(r_u - r_l) * \\int_{r_l}^{r_u} dr Qhat(r, r x2, r x3).
+        Qbar(x, y) = 1/(r_u - r_l) * \\int_{r_l}^{r_u} dr Qhat(x r, y r, r).
 
-    The integral runs over the reference (smallest) side r1 = r and is evaluated
-    by the trapezoidal rule on ``n_r`` points.  ``x2`` and ``x3`` may be arrays
-    of any matching shape; the result has that same shape.
+    The integral runs over the reference (largest) side r3 = r and is evaluated
+    by the trapezoidal rule on ``n_r`` points.  ``x`` and ``y`` may be arrays of
+    any matching shape; the result has that same shape.
     """
-    x2 = np.asarray(x2, dtype=float)
-    x3 = np.asarray(x3, dtype=float)
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
 
     rr = np.linspace(r_l, r_u, n_r)
-    r1 = rr.reshape((1,) * x2.ndim + (-1,))          # (..., n_r)
-    val = integrand(r1, r1 * x2[..., None], r1 * x3[..., None])
+    r3 = rr.reshape((1,) * x.ndim + (-1,))           # (..., n_r)
+    val = integrand(x[..., None] * r3, y[..., None] * r3, r3)
     return _trapz(val, rr, axis=-1) / (r_u - r_l)

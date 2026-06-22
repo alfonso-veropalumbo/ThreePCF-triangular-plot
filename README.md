@@ -74,24 +74,24 @@ the cosine of the angle between sides `r1` and `r2` (opposite the longest side
 the 3PCF model.
 
 `plot_3pcf_qbar.py` writes `qbar_triangular.png`: the **scale-averaged** 3PCF as
-a function of shape, normalised by the *smallest* side `r1`. In configuration
-space the side hierarchy is upside-down relative to Fourier space (the smallest
-side `r1` plays the role of the largest wavenumber `k1`), so here the shape axes
-are `x2 = r2/r1` and `x3 = r3/r1`, both `>= 1`, with valid triangles in the band
-`x2 <= x3 <= x2 + 1`. The plotted quantity is the configuration-space analogue
-of Eq. (44),
+a function of shape, on the same inverted-triangle plane as the main figure,
+normalised by the largest side `r3`. The shape axes are `x = r1/r3` and
+`y = r2/r3` (both `<= 1`), with the squeezed, equilateral and folded
+configurations at the three corners. The plotted quantity is the
+configuration-space analogue of Eq. (44),
 
 ```
-Qbar(x2, x3) = 1/(r_u - r_l) * integral_{r_l}^{r_u} dr  Qhat(r, r*x2, r*x3),
+Qbar(x, y) = 1/(r_u - r_l) * integral_{r_l}^{r_u} dr  Qhat(x*r, y*r, r),
 ```
 
-i.e. `Qhat` averaged over the reference (smallest) side `r1 = r`. The synthetic
-`Qhat` uses a two-point function with a large-scale zero-crossing, so the 3PCF
-**changes sign**: the colour scale is diverging and centred (white) at zero,
-positive (red) near equilateral and negative (blue) toward elongated shapes.
-The averaging window `[r_l, r_u]` is chosen to straddle the zero-crossing regime
-so the sign is visible; `synthetic_qhat` and `q_bar` in `three_pcf_triangular.py`
-expose all the parameters.
+i.e. `Qhat` averaged over the reference (largest) side `r3 = r`. The colour
+scale adapts to the data: a decade-aligned logarithmic scale when `Qbar` is
+single-signed (as for the synthetic placeholder, which peaks toward the
+squeezed edge), or a diverging scale centred at zero if `Qbar` changes sign.
+The synthetic `Qhat` is only an illustrative placeholder; swap in a measured or
+modelled reduced 3PCF via the `integrand` argument of `q_bar`. The averaging
+window `[r_l, r_u]` and all model parameters are exposed in
+`three_pcf_triangular.py`.
 
 ### Plugging in real data
 
