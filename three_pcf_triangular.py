@@ -149,6 +149,20 @@ def synthetic_zeta(
     return zeta
 
 
+def cosine_r1_r2(cfg: TriangleConfigurations) -> np.ndarray:
+    """Cosine of the angle between sides r1 and r2.
+
+    That angle sits opposite the third side r3, so by the law of cosines
+
+        cos(theta_12) = (r1^2 + r2^2 - r3^2) / (2 r1 r2).
+
+    With r1 <= r2 <= r3, r3 is the longest side, so theta_12 is the largest
+    angle: cos ranges from -1 (folded/degenerate, r3 = r1 + r2) up to 0.5
+    (equilateral); squeezed configurations give cos -> 0 (right angle).
+    """
+    return (cfg.r1 ** 2 + cfg.r2 ** 2 - cfg.r3 ** 2) / (2.0 * cfg.r1 * cfg.r2)
+
+
 def bin_on_shape_plane(
     x: np.ndarray,
     y: np.ndarray,
@@ -158,13 +172,15 @@ def bin_on_shape_plane(
     x_range: tuple[float, float] = (0.0, 1.0),
     y_range: tuple[float, float] = (0.5, 1.0),
     min_count: int = 2,
+    log: bool = True,
 ) -> tuple[np.ndarray, np.ndarray, np.ma.MaskedArray]:
     """Average ``values`` over a 2D grid in the shape plane (x, y).
 
-    A *geometric* mean (mean of log10, then exponentiated) is used because the
-    3PCF spans several decades across the scales that fall into each shape bin;
-    the geometric mean gives the smooth gradient seen in the original figure
-    rather than letting a single small-scale triangle saturate a cell.  Cells
+    With ``log=True`` (the default) a *geometric* mean is used, appropriate for
+    a positive quantity spanning several decades such as the 3PCF: it gives the
+    smooth gradient seen in the original figure rather than letting a single
+    small-scale triangle saturate a cell.  With ``log=False`` an ordinary linear
+    mean is used, suitable for signed quantities such as cos(theta_12).  Cells
     with fewer than ``min_count`` triangles are masked (drawn white).
 
     Returns the bin edges ``xedges``, ``yedges`` and a masked array of the mean
@@ -173,12 +189,14 @@ def bin_on_shape_plane(
     xedges = np.linspace(*x_range, nx + 1)
     yedges = np.linspace(*y_range, ny + 1)
 
-    logv = np.log10(values)
-    total, _, _ = np.histogram2d(x, y, bins=[xedges, yedges], weights=logv)
+    weights = np.log10(values) if log else values
+    total, _, _ = np.histogram2d(x, y, bins=[xedges, yedges], weights=weights)
     count, _, _ = np.histogram2d(x, y, bins=[xedges, yedges])
 
     with np.errstate(invalid="ignore", divide="ignore"):
-        mean = 10 ** (total / count)
+        mean = total / count
+        if log:
+            mean = 10 ** mean
     mean = np.ma.masked_array(mean, mask=~np.isfinite(mean) | (count < min_count))
 
     return xedges, yedges, mean

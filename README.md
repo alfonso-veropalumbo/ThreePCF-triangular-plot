@@ -38,20 +38,36 @@ measurements.
 - `three_pcf_triangular.py` — triangle enumeration
   (`build_triangle_configurations`, `r1 <= r2 <= r3`), the shape ratios
   (`TriangleConfigurations.shape_ratios`), the synthetic model
-  (`synthetic_zeta`), and the shape-plane binning (`bin_on_shape_plane`).
+  (`synthetic_zeta`), the angle cosine (`cosine_r1_r2`), and the shape-plane
+  binning (`bin_on_shape_plane`).
 - `plot_3pcf_triangular.py` — builds the 2×4 grid and writes
   `zeta_triangular.png`.
+- `plot_3pcf_cos_angle.py` — single triangle-shape panel coloured by the cosine
+  of the angle between `r1` and `r2`; writes `cos_angle_triangular.png`.
 
 ## Usage
 
 ```bash
 pip install -r requirements.txt
-python plot_3pcf_triangular.py
+python plot_3pcf_triangular.py   # 2x4 grid of zeta(r1,r2,r3) shape maps
+python plot_3pcf_cos_angle.py    # single panel coloured by cos(theta_12)
 ```
 
-This writes `zeta_triangular.png`: a 2×4 grid of triangle-shape colour maps of
-`zeta`, with a shared `RdBu` log colour scale (blue = high ≈ squeezed,
-red = low ≈ equilateral).
+`plot_3pcf_triangular.py` writes `zeta_triangular.png`: a 2×4 grid of
+triangle-shape colour maps of `zeta`, with a shared `RdBu` log colour scale
+(blue = high ≈ squeezed, red = low ≈ equilateral).
+
+`plot_3pcf_cos_angle.py` writes `cos_angle_triangular.png`: one triangle-shape
+panel over the same `(r1/r3, r2/r3)` plane, coloured by
+
+```
+cos(theta_12) = (r1^2 + r2^2 - r3^2) / (2 r1 r2),
+```
+
+the cosine of the angle between sides `r1` and `r2` (opposite the longest side
+`r3`). It runs from `-1` on the folded edge through `~0` at squeezed up to
+`0.5` at the equilateral corner — a purely geometric quantity, independent of
+the 3PCF model.
 
 ### Plugging in real data
 
